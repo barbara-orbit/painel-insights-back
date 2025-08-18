@@ -52,13 +52,13 @@ def apply_filters_and_search(data: List[Dict[str, Any]], filters: Optional[Dict[
                 df = df[df[key].isin(value)]
     
     # Busca
-    #if search_term:
-    #    search_term = search_term.lower()
-    #    search_columns = ['Marca', 'Plataforma', 'Insight', "Data do report/status", "Mês", "Tipo de insight"]
-    #    df = df[df[search_columns].apply(
-    #        lambda row: row.astype(str).str.lower().str.contains(search_term, na=False).any(),
-    #        axis=1
-    #    )]
+    if search_term:
+        search_term = search_term.lower()
+        search_columns = ['Marca', 'Plataforma', 'Insight', "Data do report/status", "Mês", "Tipo de insight"]
+        df = df[df[search_columns].apply(
+            lambda row: row.astype(str).str.lower().str.contains(search_term, na=False).any(),
+            axis=1
+        )]
     
     return df.to_dict('records')
 
