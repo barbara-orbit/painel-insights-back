@@ -36,22 +36,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import pandas as pd
+from typing import List, Dict, Any, Optional
+
 def apply_filters_and_search(data: List[Dict[str, Any]], filters: Optional[Dict[str, Any]], search_term: Optional[str]) -> List[Dict[str, Any]]:
     """
-    Aplica filtros e termo de busca sobre os dados.
+    Aplica filtros, termo de busca e ordena os dados pela coluna 'Mês'.
     """
     if not data:
         return []
 
     df = pd.DataFrame(data)
 
-    # Filtro
+    month_mapping = {
+        'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4,
+        'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8,
+        'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12
+    }
+
+    df['mes_numero'] = df['Mês'].str.lower().map(month_mapping)
+
+    df['Data do report/status'] = df['Data do report/status'].astype(str).replace({'nan': ''})
+
     if filters:
         for key, value in filters.items():
-            if value:
+            if value and key in df.columns:
                 df = df[df[key].isin(value)]
-    
-    # Busca
+
     if search_term:
         search_term = search_term.lower()
         search_columns = ['Marca', 'Plataforma', 'Insight', "Data do report/status", "Mês", "Tipo de insight"]
@@ -59,6 +70,10 @@ def apply_filters_and_search(data: List[Dict[str, Any]], filters: Optional[Dict[
             lambda row: row.astype(str).str.lower().str.contains(search_term, na=False).any(),
             axis=1
         )]
+    
+    df = df.sort_values(by=['mes_numero'], ascending=True, na_position='last')
+
+    df = df.drop(columns=['mes_numero'])
     
     return df.to_dict('records')
 
