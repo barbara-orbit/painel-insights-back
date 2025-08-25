@@ -25,7 +25,9 @@ app.add_middleware(
 
 def apply_filters_and_search(data: List[Dict[str, Any]],
                              filters: Optional[Dict[str, Any]],
-                             search_term: Optional[str]) -> List[Dict[str, Any]]:
+                             search_term: Optional[str],
+                             start_date: Optional[str],
+                             end_date: Optional[str]) -> List[Dict[str, Any]]:
     if not data:
         return []
 
@@ -52,6 +54,16 @@ def apply_filters_and_search(data: List[Dict[str, Any]],
         df = df[df[search_cols].apply(
             lambda row: row.astype(str).str.lower().str.contains(st, na=False).any(), axis=1
         )]
+
+    if start_date:
+        start_dt = pd.to_datetime(start_date, errors='coerce')
+        if pd.notna(start_dt):
+            df = df[df['Data do report/status'] >= start_dt]
+
+    if end_date:
+        end_dt = pd.to_datetime(end_date, errors="coerce")
+        if pd.notna(end_dt):
+            df = df[df['Data do report/status'] <= end_dt]
 
     df = df.sort_values(by=['Data do report/status'], ascending=True, na_position='last')
 
@@ -80,7 +92,9 @@ def get_metadata():
 @app.get("/api/getData")
 def get_insights(
     filters: Optional[str] = Query(None, description='JSON de filtros. Ex: {"Marca":["Budweiser"]}'),
-    search: Optional[str] = Query(None, description="Termo de busca para os insights.")
+    search: Optional[str] = Query(None, description="Termo de busca para os insights."),
+    start_date: Optional[str] = Query(None, description="Data de início do intervalo. Formato: YYYY-MM-DD."),
+    end_date: Optional[str] = Query(None, description="Data de fim do intervalo. Formato: YYYY-MM-DD.")
 ):
     try:
         all_data = fetch_all_data()
@@ -95,7 +109,7 @@ def get_insights(
 
         filter_dict = json.loads(filters) if filters else None
 
-        filtered_insights = apply_filters_and_search(insights, filter_dict, search) or []
+        filtered_insights = apply_filters_and_search(insights, filter_dict, search, start_date, end_date) or []
 
         print(f"[DBG] /api/getData -> filtered_insights={len(filtered_insights)}")
 
