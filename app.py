@@ -41,8 +41,6 @@ def apply_filters_and_search(data: List[Dict[str, Any]],
         df['Data do report/status'], format='%d/%m/%Y', errors='coerce'
     )
 
-    df.info()
-
     if filters:
         for key, value in filters.items():
             if value and key in df.columns:
@@ -72,7 +70,6 @@ def apply_filters_and_search(data: List[Dict[str, Any]],
     df = df.where(pd.notna(df), None)
 
     result = df.to_dict('records')
-    print(f"[DBG] resultados: {len(result)}; primeiro: {result[0] if result else 'Nenhum'}")
     return result
 
 @app.get("/api/getMetadata")
@@ -110,8 +107,6 @@ def get_insights(
         filter_dict = json.loads(filters) if filters else None
 
         filtered_insights = apply_filters_and_search(insights, filter_dict, search, start_date, end_date) or []
-
-        print(f"[DBG] /api/getData -> filtered_insights={len(filtered_insights)}")
 
         return {
             "insights": filtered_insights,
