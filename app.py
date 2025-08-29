@@ -72,6 +72,10 @@ def apply_filters_and_search(data: List[Dict[str, Any]],
     result = df.to_dict('records')
     return result
 
+@app.get("/")
+def read_root():
+    return {"message": "Bem-vindo à página principal!"}
+
 @app.get("/api/getMetadata")
 def get_metadata():
     try:

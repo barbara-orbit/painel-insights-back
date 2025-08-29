@@ -27,7 +27,7 @@ def get_sheets_client():
 # Busca os dados da planilha e armazena em cache
 # Usa a notação @lru_cache pra evitar múltiplas chamadas
 # Atualiza cache a cada reiniciação do servidor
-@lru_cache(maxsize=1)
+#@lru_cache(maxsize=1)
 def fetch_all_data() -> dict:
     client = get_sheets_client()
     if not client:
