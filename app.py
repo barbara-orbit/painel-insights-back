@@ -8,8 +8,10 @@ from services.sheets_service import fetch_all_data
 import uvicorn
 
 REQUIRED_COLS = ['Marca', 'Plataforma', 'Insight', 'Data do report/status', 'Mês', 'Tipo de insight']
-DATE_COL = 'Data do report/status'
+DATE_COL = 'Data do report/status' 
+DATE_COLS = ['Data do report/status', 'LTV']
 DATE_INPUT_FMT = '%d/%m/%Y'
+OUTPUT_DATE_FMT = '%d-%m-%Y'
 
 CANON_TO_COL = {
     "brand": "Marca",
@@ -18,7 +20,7 @@ CANON_TO_COL = {
     "month": "Mês",
 }
 
-SEARCHABLE_COLS = ['Marca', 'Plataforma', 'Insight', 'Tipo de insight', 'Mês']
+SEARCHABLE_COLS = ['Marca', 'Plataforma', 'Insight', 'Tipo de insight', 'Mês', 'LTV']
 
 app = FastAPI(title="Painel Insights API", description="API para servir dados de insights do Google Sheets.")
 app.add_middleware(
@@ -56,9 +58,11 @@ def _ensure_required_cols(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def _parse_sheet_dates(df: pd.DataFrame) -> pd.DataFrame:
-    if DATE_COL in df.columns:
-        df[DATE_COL] = pd.to_datetime(df[DATE_COL], format=DATE_INPUT_FMT, errors='coerce')
+    for col in DATE_COLS:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], format=DATE_INPUT_FMT, errors='coerce')
     return df
+
 
 def _apply_canonical_filters(df: pd.DataFrame, f: Optional[FilterPayload]) -> pd.DataFrame:
     if f is None:
@@ -93,9 +97,16 @@ def _apply_date_range(df: pd.DataFrame, start_date: Optional[str], end_date: Opt
     return out
 
 def _finalize_df(df: pd.DataFrame) -> pd.DataFrame:
+    # mantém a ordenação pela data padrão
     if DATE_COL in df.columns:
-        df = df.sort_values(by=[DATE_COL], ascending=True, na_position='last')
-        df[DATE_COL] = df[DATE_COL].dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        df = df.sort_values(by=[DATE_COL], ascending=False, na_position='last')
+
+    # formata TODAS as colunas de data conhecidas no novo formato
+    for col in DATE_COLS:
+        if col in df.columns and pd.api.types.is_datetime64_any_dtype(df[col]):
+            df[col] = df[col].dt.strftime(OUTPUT_DATE_FMT)
+
+    # normaliza NaN -> None
     return df.where(pd.notna(df), None)
 
 def _filter_pipeline(data: List[Dict[str, Any]], payload: DataRequest) -> pd.DataFrame:
